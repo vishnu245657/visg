@@ -1,4 +1,4 @@
-name: Google Job Monitor
+name: Global Job Monitor
 
 on:
   schedule:
@@ -6,10 +6,10 @@ on:
   workflow_dispatch: # Allows manual run
 
 permissions:
-  contents: write # REQUIRED to save the state file
+  contents: write # REQUIRED for saving state files
 
 jobs:
-  run_bot:
+  run_bots:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -21,16 +21,46 @@ jobs:
           python-version: '3.9'
 
       - name: Install Libraries
-        run: pip install -r requirements.txt
+        run: pip install requests beautifulsoup4
 
+      # --- 1. UBER ---
+      - name: Run Uber Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python uber_engineering.py || true
+
+      # --- 2. STANDARD CHARTERED ---
+      - name: Run SC Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python sc_bot.py || true
+
+      # --- 3. GOOGLE ---
       - name: Run Google Bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python google_bot.py
+        run: python google.py || true
 
-      - name: Save State
+      # --- 4. AMAZON (NEW) ---
+      - name: Run Amazon Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python amazon_bot.py || true
+
+      # --- 5. SALESFORCE (NEW) ---
+      - name: Run Salesforce Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python salesforce_bot.py || true
+
+      # --- SAVE STATES ---
+      - name: Save Bot Memories
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: "Update google job state"
-          file_pattern: "state_google.txt"
+          commit_message: "Update all job states"
+          file_pattern: "state_*.txt seen_jobs.json"
