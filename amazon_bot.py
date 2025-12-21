@@ -6,7 +6,7 @@ import json
 # --- CONFIGURATION ---
 # We use Amazon's internal API, not the public HTML page.
 # This URL fetches "Student Programs" sorted by "Most Recent".
-URL = "https://www.amazon.jobs/en/search.json?business_category[]=student-programs&sort=recent"
+URL = "https://www.amazon.jobs/content/en/career-programs/university"
 MEMORY_FILE = "state_amazon.txt"
 
 # Telegram Secrets
