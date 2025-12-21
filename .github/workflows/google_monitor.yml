@@ -23,19 +23,7 @@ jobs:
       - name: Install Libraries
         run: pip install requests beautifulsoup4
 
-      # --- 1. UBER ---
-      - name: Run Uber Bot
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python uber_engineering.py || true
 
-      # --- 2. STANDARD CHARTERED ---
-      - name: Run SC Bot
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-        run: python sc_bot.py || true
 
       # --- 3. GOOGLE ---
       - name: Run Google Bot
