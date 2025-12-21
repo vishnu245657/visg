@@ -1,0 +1,36 @@
+name: Google Job Monitor
+
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Runs every 30 minutes
+  workflow_dispatch: # Allows manual run
+
+permissions:
+  contents: write # REQUIRED to save the state file
+
+jobs:
+  run_bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Libraries
+        run: pip install -r requirements.txt
+
+      - name: Run Google Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python google_bot.py
+
+      - name: Save State
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Update google job state"
+          file_pattern: "state_google.txt"
