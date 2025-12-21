@@ -1,10 +1,11 @@
 import requests
 import os
 import hashlib
+import json
 from bs4 import BeautifulSoup
 
 # --- CONFIGURATION ---
-# The Meta University Grad Engineering URL
+# The specific Meta URL for University Grad - Engineering
 URL = "https://www.metacareers.com/jobsearch?teams[0]=University%20Grad%20-%20Engineering%2C%20Tech%20%26%20Design"
 MEMORY_FILE = "state_meta.txt"
 
@@ -17,11 +18,10 @@ def send_alert(msg):
     payload = {"chat_id": CHAT_ID, "text": msg, "parse_mode": "HTML"}
     try:
         requests.post(url, json=payload)
-        print("Alert Sent!")
     except Exception as e:
         print(f"Failed to send alert: {e}")
 
-def get_meta_hash():
+def get_job_fingerprint():
     # Meta requires headers to look like a real browser
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -39,40 +39,39 @@ def get_meta_hash():
         soup = BeautifulSoup(response.text, 'html.parser')
         
         # --- STRATEGY ---
-        # Meta's job titles are often in <h4> tags or divs with specific classes.
-        # Since classes change, we grab all text from links that look like job posts.
+        # Meta's structure is dynamic, but job titles usually appear in links 
+        # or headers. We capture all text that looks like a job title link.
         
         job_titles = []
-        # Find links containing "/jobs/" but exclude navigation links
+        # Find all links that point to a job description page
         links = soup.find_all("a", href=True)
         
         for link in links:
             href = link['href']
-            # Filter for job detail pages
-            if "/jobs/" in href and not "login" in href and not "jobsearch" in href:
+            # Filter for job posts (usually containing /jobs/ and excluding login/generic links)
+            if "/jobs/" in href and "login" not in href:
                 title = link.get_text(" ", strip=True)
-                if len(title) > 5: # Basic filter to avoid empty icons/buttons
+                if len(title) > 5: # Filter out icons or empty links
                     job_titles.append(title)
-        
-        if not job_titles:
-            # Fallback: Hash the main content area text if individual jobs aren't found
-            # This is "dirty" but works if they change HTML structure
-            body_text = soup.get_text()
-            if "No jobs found" in body_text:
-                 return "NO_JOBS"
-            # Hash the first 5000 chars of visible text as a fallback state
-            return hashlib.md5(body_text[:5000].encode('utf-8')).hexdigest()
 
-        # Create unique hash of the top 5 jobs
+        if not job_titles:
+            # Fallback: Hash the main text content if specific links aren't found
+            # This ensures we still detect changes even if they change CSS classes
+            text_content = soup.get_text()[:5000] 
+            if "No jobs found" in text_content:
+                return "NO_JOBS"
+            return hashlib.md5(text_content.encode('utf-8')).hexdigest()
+
+        # Create a fingerprint of the top 5 jobs
         content_to_hash = "||".join(job_titles[:5])
         return hashlib.md5(content_to_hash.encode('utf-8')).hexdigest()
 
     except Exception as e:
-        print(f"Error checking site: {e}")
+        print(f"Error checking Meta: {e}")
         return None
 
 # --- EXECUTION ---
-current_hash = get_meta_hash()
+current_hash = get_job_fingerprint()
 
 if current_hash:
     old_hash = ""
@@ -82,6 +81,7 @@ if current_hash:
             
     if current_hash != old_hash:
         print(f"Change Detected! New Hash: {current_hash}")
+        
         with open(MEMORY_FILE, "w") as f:
             f.write(current_hash)
             
